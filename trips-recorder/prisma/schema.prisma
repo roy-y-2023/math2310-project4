@@ -10,9 +10,21 @@ datasource db {
   url      = "file:./data/dev.db"
 }
 
+model ScraperRunLog {
+  id               Int      @id @default(autoincrement())
+  scraperSessionID String
+  beginAt          DateTime
+  endAt            DateTime
+  routeCount       Int
+  tripCount        Int
+  routeFetchTimeS  Float
+  tripFetchTimeS   Float
+}
+
 model TripStatus {
   id                 Int      @id @default(autoincrement())
   collectedAt        DateTime
+  secondsOfDay       Int
   routeID            String
   tripID             String
   scheduleDeviation  Int
