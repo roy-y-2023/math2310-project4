@@ -5,11 +5,19 @@ import {getOBAClientOptions} from "./oba-client-helper.ts";
 
 
 const ROUTES = [
-    "1_102615",
-    "1_102745",
-    "23_102638",
-    "40_100479",
-    "40_2LINE",
+    [
+        "1_102615", // E
+        "1_102745", // G
+        "23_102638", // First Hill Streetcar
+        "40_100479", // 1 Line
+        "40_2LINE", // 2 Line
+    ],[
+        "1_100173", // 3
+        "1_100219", // 4
+        "40_100240", // 554
+        "1_100045", // 150
+        "1_102576", // C
+    ]
 ];
 
 const prisma = new PrismaClient();
@@ -17,14 +25,14 @@ const oba: OnebusawaySDK = new OnebusawaySDK(getOBAClientOptions());
 const scraperSessionID = Math.random().toString(36).substring(2, 15);
 
 console.log("Starting scraper session", scraperSessionID);
-async function run(){
+async function run(routes: string[]){
     try {
         let cycleStartTime = new Date();
         let tripsCount = 0;
         let routeFetchTimesMs = 0;
         let tripFetchTimesMs = 0;
         
-        for (let route of ROUTES){
+        for (let route of routes){
             console.log(`Getting trips for ${route}`);
             let routeFetchTimeStart = new Date();
             let details = await oba.tripsForRoute.list(route);
@@ -58,8 +66,8 @@ async function run(){
                         tripID: tripID,
                         scheduleDeviation: statusResp.data.entry.status!.scheduleDeviation,
                         scraperSessionID: scraperSessionID,
-                        nextStopID: statusResp.data.entry.status!.nextStop,
-                        nextStopTimeOffset: statusResp.data.entry.status!.nextStopTimeOffset,
+                        nextStopID: statusResp.data.entry.status!.nextStop ?? "none",
+                        nextStopTimeOffset: statusResp.data.entry.status!.nextStopTimeOffset ?? 0,
                         distanceAlongTrip: statusResp.data.entry.status!.distanceAlongTrip,
                     }
                 })
@@ -70,9 +78,10 @@ async function run(){
         await prisma.scraperRunLog.create({
             data: {
                 scraperSessionID: scraperSessionID,
+                taskID: routes.join("+"),
                 beginAt: cycleStartTime,
                 endAt: new Date(),
-                routeCount: ROUTES.length,
+                routeCount: routes.length,
                 tripCount: tripsCount,
                 routeFetchTimeS: routeFetchTimesMs / 1000,
                 tripFetchTimeS: tripFetchTimesMs / 1000,
@@ -85,5 +94,6 @@ async function run(){
 
 
 // run the function every 2 minutes
-await run();
-setInterval(run, 2 * 60 * 1000);
+setInterval(() => run(ROUTES[0]), 2 * 60 * 1000);
+await run(ROUTES[0]);
+setInterval(() => run(ROUTES[1]), 2 * 60 * 1000);

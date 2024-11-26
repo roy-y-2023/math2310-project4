@@ -13,6 +13,7 @@ datasource db {
 model ScraperRunLog {
   id               Int      @id @default(autoincrement())
   scraperSessionID String
+  taskID           String
   beginAt          DateTime
   endAt            DateTime
   routeCount       Int
